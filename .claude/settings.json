@@ -1,11 +1,14 @@
 {
   "skillListingBudgetFraction": 0.06,
-  "customInstructions": "Follow the project's CLAUDE.md guidelines. Use concurrent execution for all operations. Prioritize v3 implementation with security-first development, 15-agent swarm coordination, phased performance optimization, and cross-platform helper automation.",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_FLOW_V3_ENABLED": "true",
     "CLAUDE_FLOW_HOOKS_ENABLED": "true",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
+  },
+  "attribution": {
+    "commit": "Co-Authored-By: RuFlo <ruv@ruv.net>",
+    "pr": "🤖 Generated with [RuFlo](https://github.com/ruvnet/ruflo)"
   },
   "permissions": {
     "allow": [
@@ -41,6 +44,9 @@
       "Bash(rm -rf /)"
     ]
   },
+  "enabledMcpjsonServers": [
+    "claude-flow"
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -157,10 +163,24 @@
       }
     ]
   },
-  "attribution": {
-    "commit": "Co-Authored-By: RuFlo <ruv@ruv.net>",
-    "pr": "\ud83e\udd16 Generated with [RuFlo](https://github.com/ruvnet/ruflo)"
+  "statusLine": {
+    "type": "command",
+    "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/statusline.cjs\"'"
   },
+  "enabledPlugins": {
+    "ruflo-mods@ruflo": true,
+    "ruflo-swarm@ruflo": true,
+    "ruflo-console@ruflo": true
+  },
+  "extraKnownMarketplaces": {
+    "ruflo": {
+      "source": {
+        "source": "github",
+        "repo": "ruvnet/ruflo"
+      }
+    }
+  },
+  "customInstructions": "Follow the project's CLAUDE.md guidelines. Use concurrent execution for all operations. Prioritize v3 implementation with security-first development, 15-agent swarm coordination, phased performance optimization, and cross-platform helper automation.",
   "claudeFlow": {
     "version": "3.6.11",
     "enabled": true,
@@ -199,9 +219,15 @@
     "memory": {
       "backend": "hybrid",
       "enableHNSW": true,
-      "learningBridge": { "enabled": true },
-      "memoryGraph": { "enabled": true },
-      "agentScopes": { "enabled": true }
+      "learningBridge": {
+        "enabled": true
+      },
+      "memoryGraph": {
+        "enabled": true
+      },
+      "agentScopes": {
+        "enabled": true
+      }
     },
     "neural": {
       "enabled": true
@@ -221,18 +247,40 @@
         "benchmark"
       ],
       "schedules": {
-        "audit": { "interval": "1h", "priority": "critical" },
-        "optimize": { "interval": "30m", "priority": "high" },
-        "consolidate": { "interval": "2h", "priority": "low" },
-        "document": { "interval": "1h", "priority": "normal" },
-        "deepdive": { "interval": "4h", "priority": "normal" },
-        "ultralearn": { "interval": "1h", "priority": "normal" }
+        "audit": {
+          "interval": "1h",
+          "priority": "critical"
+        },
+        "optimize": {
+          "interval": "30m",
+          "priority": "high"
+        },
+        "consolidate": {
+          "interval": "2h",
+          "priority": "low"
+        },
+        "document": {
+          "interval": "1h",
+          "priority": "normal"
+        },
+        "deepdive": {
+          "interval": "4h",
+          "priority": "normal"
+        },
+        "ultralearn": {
+          "interval": "1h",
+          "priority": "normal"
+        }
       }
     },
     "learning": {
       "enabled": true,
       "autoTrain": true,
-      "patterns": ["coordination", "optimization", "prediction"],
+      "patterns": [
+        "coordination",
+        "optimization",
+        "prediction"
+      ],
       "retention": {
         "shortTerm": "24h",
         "longTerm": "30d"
@@ -263,10 +311,6 @@
     "source": ".claude/commands",
     "enabled": true
   },
-  "statusLine": {
-    "type": "command",
-    "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/statusline.cjs\"'"
-  },
   "mcpServers": {
     "claude-flow": {
       "command": "npx",
@@ -277,16 +321,5 @@
         "start"
       ]
     }
-  },
-  "enabledMcpjsonServers": [
-    "claude-flow"
-  ],
-  "enabledPlugins": {
-    "ruflo-mods@ruflo": true,
-    "ruflo-swarm@ruflo": true,
-    "ruflo-console@ruflo": true
-  },
-  "extraKnownMarketplaces": {
-    "ruflo": { "source": { "source": "github", "repo": "ruvnet/ruflo" } }
   }
 }

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-cli"
+version = "0.1.0"
+description = "Click-ready project inspector for the Ruflo workspace"
+requires-python = ">=3.10"
+dependencies = [
+  "click>=8.1.7",
+]
+
+[project.scripts]
+project-cli = "project_cli.cli:cli"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["project_cli*"]

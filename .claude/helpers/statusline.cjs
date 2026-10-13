@@ -42,11 +42,15 @@ const CONFIG = {
   hideCost: /^(1|true|yes|on)$/i.test(process.env.RUFLO_STATUSLINE_HIDE_COST || ''),
 };
 
-const CWD = process.cwd();
+const CWD = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 // The helper's own install root: the project for a project-local helper,
 // $HOME for a home-level one. The CLI is resolved from here, never from CWD,
 // so a home-level statusline does not run code the opened project supplies.
 const HELPER_ROOT = path.resolve(__dirname, '..', '..');
+// Replaced by statusline-generator with the package root of the CLI that
+// installed this helper. This survives custom npm prefixes and bundled Node
+// runtimes whose process.execPath belongs to a different tree (#2811).
+const BAKED_INSTALL_ROOT = "C:\\Users\\ghost\\AppData\\Local\\npm-cache\\_npx\\2ed56890c96f58f7\\node_modules\\@claude-flow\\cli";
 
 // ─── Delegation cache ───────────────────────────────────────────
 // Cache the CLI JSON result so rapid prompt re-renders (Claude Code
@@ -703,47 +707,7 @@ function readJSON(filePath) {
 
 // ─── Git info (pure-Node / single exec — needed for branch display) ──────────
 
-// #3045 — getGitInfo() shells out to a 5-command chain per render. Uncached,
-// it queues subprocesses faster than they finish on large repos with multiple
-// concurrent Claude Code sessions, producing the pileup reported in that
-// issue (hundreds of orphan git children, load-avg in the hundreds). Cache
-// the parsed result in a per-cwd tmp file with a short TTL — dirty/branch
-// status doesn't need per-render freshness, and 5s is short enough to feel
-// live.
-const GIT_INFO_CACHE_FILE = path.join(
-  os.tmpdir(),
-  'ruflo-statusline-gitinfo-' +
-    require('crypto').createHash('md5').update(CWD).digest('hex').slice(0, 8) +
-    '.json'
-);
-const GIT_INFO_TTL_MS = 5000;
-
-function readGitInfoCache() {
-  try {
-    if (fs.existsSync(GIT_INFO_CACHE_FILE)) {
-      const raw = JSON.parse(fs.readFileSync(GIT_INFO_CACHE_FILE, 'utf-8'));
-      if (raw && typeof raw._ts === 'number' && Date.now() - raw._ts < GIT_INFO_TTL_MS && raw.data) {
-        return raw.data;
-      }
-    }
-  } catch { /* ignore */ }
-  return null;
-}
-
-function writeGitInfoCache(data) {
-  try {
-    fs.writeFileSync(
-      GIT_INFO_CACHE_FILE,
-      JSON.stringify({ _ts: Date.now(), data }),
-      'utf-8'
-    );
-  } catch { /* ignore */ }
-}
-
 function getGitInfo() {
-  const cached = readGitInfoCache();
-  if (cached) return cached;
-
   const result = {
     name: path.basename(CWD) || 'project', gitBranch: '', modified: 0, untracked: 0,
     staged: 0, ahead: 0, behind: 0,
@@ -762,12 +726,7 @@ function getGitInfo() {
   ].join('; ');
 
   const raw = safeExec("sh -c '" + script + "'", 3000);
-  if (!raw) {
-    // Cache even the empty result — if git is slow/unavailable, we don't want
-    // to re-attempt on every render either.
-    writeGitInfoCache(result);
-    return result;
-  }
+  if (!raw) return result;
 
   const parts = raw.split('---SEP---').map(function(s) { return s.trim(); });
   if (parts.length >= 5) {
@@ -791,7 +750,6 @@ function getGitInfo() {
     result.behind = parseInt(ab[1]) || 0;
   }
 
-  writeGitInfoCache(result);
   return result;
 }
 
@@ -951,10 +909,11 @@ function getPkgVersion() {
   // version (see generateStatuslineScript()'s doc comment) — correct even
   // when this renders via a pure npx invocation with no local install for
   // the candidate scan below to find.
-  let ver = "3.32.8";
+  let ver = "3.56.9";
   try {
     const home = os.homedir();
     const pkgPaths = [
+      ...(BAKED_INSTALL_ROOT ? [path.join(BAKED_INSTALL_ROOT, 'package.json')] : []),
       path.join(home, '.claude', 'plugins', 'marketplaces', 'ruflo', 'package.json'),
       path.join(CWD, 'node_modules', '@claude-flow', 'cli', 'package.json'),
       path.join(CWD, 'node_modules', 'ruflo', 'package.json'),
@@ -982,7 +941,12 @@ function getPkgVersion() {
       // #2221 follow-up: a custom npm prefix (e.g. ~/.npm-global) is decoupled from
       // the node binary location, so the binDir-derived probes above all miss. Also
       // probe the npm prefix from the environment and the common ~/.npm-global default.
-      for (const prefix of [process.env.npm_config_prefix, process.env.PREFIX, path.join(home, '.npm-global')]) {
+      for (const prefix of [
+        process.env.npm_config_prefix,
+        process.env.PREFIX,
+        path.join(home, '.local'),
+        path.join(home, '.npm-global'),
+      ]) {
         if (prefix) globalModuleDirs.push(path.join(prefix, 'lib', 'node_modules'));
       }
       for (const gm of globalModuleDirs) {
@@ -1001,14 +965,12 @@ function getPkgVersion() {
     // right after a publish). Taking the first EXISTING candidate meant the
     // header could show a stale version even when a newer install (e.g.
     // node_modules/@claude-flow/cli from a plain npm install) was sitting right there.
-    let found = false;
     for (const p of pkgPaths) {
       if (!fs.existsSync(p)) continue;
       try {
         const pkg = JSON.parse(fs.readFileSync(p, 'utf-8'));
         if (pkg && typeof pkg.version === 'string' && pkg.version.length > 0) {
-          if (!found || compareVersions(pkg.version, ver) > 0) ver = pkg.version;
-          found = true;
+          if (compareVersions(pkg.version, ver) > 0) ver = pkg.version;
         }
       } catch { /* ignore */ }
     }
